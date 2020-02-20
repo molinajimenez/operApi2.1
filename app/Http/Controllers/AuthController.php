@@ -10,7 +10,8 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 use Validator, DB, Hash, Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Mail\Message;
-
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 class AuthController extends Controller
 {
@@ -40,14 +41,14 @@ class AuthController extends Controller
         $password = $request->password;
         
         $user = User::create(['name' => $name, 'email' => $email, 'password' => Hash::make($password)]);
-
+        $user->assignRole('guest');
         $verification_code = str_random(30); //Generate verification code
         DB::table('user_verifications')->insert(['user_id'=>$user->id,'token'=>$verification_code]);
 
         $subject = "Please verify your email address.";
         Mail::send('email.verify', ['name' => $name, 'verification_code' => $verification_code],
             function($mail) use ($email, $name, $subject){
-                $mail->from(getenv('MAIL_USERNAME'), "USER");
+                $mail->from(getenv('MAIL_USERNAME'), "Operwork System");
                 $mail->to($email, $name);
                 $mail->subject($subject);
             });
@@ -90,6 +91,8 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required',
         ];
+
+        $validator = Validator::make($credentials, $rules);
 
         if($validator->fails()) {
             return response()->json(['success'=> false, 'error'=> $validator->messages()], 401);
@@ -152,5 +155,54 @@ class AuthController extends Controller
         return response()->json([
             'success' => true, 'data'=> ['message'=> 'A reset email has been sent! Please check your email.']
         ]);
+    }
+
+    public function me()
+    {
+        return response()->json(auth()->user());
+    }
+
+
+    public function userPerm(){
+        $values = auth()->user();
+
+        $allPermissions = DB::table('permissions')->get();
+        //aqui ya tengo el rol asociado a mi usuario loggeado
+        $model_roles = DB::table('model_has_roles')->where('model_id',$values->id)->first();
+        //esto es una lista de permisos del rol
+        $existingPermissions = DB::table('role_has_permissions')->where('role_id', $model_roles->role_id)->get();
+        $responseArray = [];
+        $lookedIds = [];
+        $roles = DB::table('roles')->where('id', $model_roles->role_id)->get();
+        $roles_response = [];
+
+        foreach($roles as $role){
+            foreach ($allPermissions as $elem) {
+                if (!in_array($elem->id, $lookedIds)) {
+                    $perm = DB::table('permissions')->where('id', $elem->id)->first();
+                    array_push($lookedIds, $elem->id);
+                    array_push($responseArray, ['permission_id' => $elem->id, "name" => $perm->name, 'value' => false]);
+                }
+            }
+    
+            foreach ($existingPermissions as $existingElem) {
+                foreach ($responseArray as $responseElem => $value) {
+                    if ($existingElem->permission_id === $responseArray[$responseElem]['permission_id']) {
+                        $responseArray[$responseElem]['value'] = true;
+                    }
+                }
+            }
+
+            $obj = [
+                'id' => $role->id,
+                'role' => $role->name,  //por ahora, despues pasamos nombre bonito.
+                'permissions' => $responseArray
+    
+            ];
+
+            array_push($roles_response, $obj);
+        }
+        
+        return response()->json($roles_response, 200);
     }
 }
