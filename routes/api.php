@@ -55,5 +55,12 @@ Route::group(['middleware' => ['jwt.auth']], function() {
         Route::post('delete', 'RoleController@delete');
     });
 
+    Route::prefix('user')->group(function (){
+        Route::get('get', 'UserController@index');
+        Route::get('add', 'UserController@store');
+        Route::get('edit', 'UserController@edit');
+        Route::get('delete', 'UserController@delete');
+    });
+
 
 });

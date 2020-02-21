@@ -111,7 +111,7 @@ class AuthController extends Controller
         }
 
         // all good so return the token
-        return response()->json(['success' => true, 'data'=> [ 'token' => $token ]], 200);
+        return response()->json(['success' => true, 'token' => $token ], 200);
     }
 
     /**
