@@ -162,8 +162,34 @@ class AuthController extends Controller
         return response()->json(auth()->user());
     }
 
+    public function edit(Request $request){
+        $user = User::where('email', $request->json()->get('email'))->first();
 
-    public function userPerm(){
+        $info = $request->json()->all();
+        /*
+        if($request->hasFile('image')){
+            $file = $request->file('image');
+            $ext = $file->getClientOriginalExtension();
+            $fileName = time() . '.' . $ext;
+            $file->move('uploads/profiles/', $fileName);
+            $img = $fileName;
+        } else{
+            $img = null;
+        }
+        */
+        if($user != null){
+            $user->fill(
+                $info
+            )->save();
+        } else{
+            return response()->json(['status' => 'User does not exist'], 400);
+        }
+
+        return response()->json(['status' => 'Updated user'], 200);
+
+    }
+
+    public function userPermission(){
         $values = auth()->user();
 
         $allPermissions = DB::table('permissions')->get();
