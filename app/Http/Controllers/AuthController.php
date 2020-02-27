@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Mail\Message;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -155,9 +156,12 @@ class AuthController extends Controller
                 $mail->subject($subject);
             });
             //add register of password reset.
+            $date = Carbon::now()->toDateTimeString();
+
             DB::table('password_resets')->insert([
                 'email' => $request->email,
-                'token' => $verification_code
+                'token' => $verification_code,
+                'created_at' => $date
             ]);
 
         } catch (\Exception $e) {
@@ -238,12 +242,12 @@ class AuthController extends Controller
 
 
     public function restorePassword(Request $request){
-        $value = DB::table('password_resets')->where('token', $request->json()->token)->get();
+        $value = DB::table('password_resets')->where('token', $request->json()->get('token'))->first();
         if(isset($value)){
             $desiredUser = $value->email;
-            $user = DB::table('users')->where('email', $desiredUser)->update(['password' => Hash::make($request->json()->password)]);
+            $user = DB::table('users')->where('email', $desiredUser)->update(['password' => Hash::make($request->json()->get('password'))]);
             //we delete the registry so it cant be used again.
-            DB::table('password_resets')->where('token', $request->json()->token)->delete();
+            DB::table('password_resets')->where('token', $request->json()->get('token'))->delete();
             return response()->json(['status' => 'ok'], 200);
         } else{
             return response()->json(['status' => 'error'], 401);
