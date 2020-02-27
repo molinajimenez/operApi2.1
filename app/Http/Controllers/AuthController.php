@@ -141,15 +141,29 @@ class AuthController extends Controller
             return response()->json(['success' => false, 'error' => ['email'=> $error_message]], 401);
         }
 
+        $verification_code = str_random(30);
+
+        
+        $email = $request->email;
+        $name = $user->name;
         try {
-            Password::sendResetLink($request->only('email'), function (Message $message) {
-                $message->subject('Your Password Reset Link');
+            $subject = "Solicitud de reinicio de contraseña";
+            Mail::send('email.forgot', ['name' => $name, 'verification_code' => $verification_code],
+            function($mail) use ($email, $name, $subject){
+                $mail->from(getenv('MAIL_USERNAME'), "Operwork System");
+                $mail->to($email, $name);
+                $mail->subject($subject);
             });
+            //add register of password reset.
+            DB::table('password_resets')->insert([
+                'email' => $request->email,
+                'token' => $verification_code
+            ]);
 
         } catch (\Exception $e) {
             //Return with error
             $error_message = $e->getMessage();
-            return response()->json(['success' => false, 'error' => $error_message], 401);
+            return response()->json(['success' => false, 'error' => $error_message, 'token' => $verification_code], 401);
         }
 
         return response()->json([
@@ -220,5 +234,20 @@ class AuthController extends Controller
         }
         
         return response()->json($roles_response, 200);
+    }
+
+
+    public function restorePassword(Request $request){
+        $value = DB::table('password_resets')->where('token', $request->json()->token)->get();
+        if(isset($value)){
+            $desiredUser = $value->email;
+            $user = DB::table('users')->where('email', $desiredUser)->update(['password' => Hash::make($request->json()->password)]);
+            //we delete the registry so it cant be used again.
+            DB::table('password_resets')->where('token', $request->json()->token)->delete();
+            return response()->json(['status' => 'ok'], 200);
+        } else{
+            return response()->json(['status' => 'error'], 401);
+        }
+
     }
 }

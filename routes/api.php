@@ -24,7 +24,8 @@ Route::prefix('auth')->group(function (){
     Route::post('register', 'AuthController@register');
     Route::post('login', 'AuthController@login');
     Route::post('recover', 'AuthController@recover');
-    Route::post('edit', 'AuthController@edit');        
+    Route::post('edit', 'AuthController@edit');
+    Route::get('forgotPassword', 'AuthController@recoveryPassword');        
 });
 
 Route::group(['middleware' => ['jwt.auth']], function() {
