@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
+use App\Product;
 class ProductController extends Controller
 {
     //
     public function index(){
-        return response()->json(['data' => product::all()], 200);
+        return response()->json(['data' => Product::all()], 200);
     }
 
     public function store(Request $request){

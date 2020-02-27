@@ -166,17 +166,7 @@ class AuthController extends Controller
         $user = User::where('email', $request->json()->get('email'))->first();
 
         $info = $request->json()->all();
-        /*
-        if($request->hasFile('image')){
-            $file = $request->file('image');
-            $ext = $file->getClientOriginalExtension();
-            $fileName = time() . '.' . $ext;
-            $file->move('uploads/profiles/', $fileName);
-            $img = $fileName;
-        } else{
-            $img = null;
-        }
-        */
+        array_filter($info);
         if($user != null){
             $user->fill(
                 $info

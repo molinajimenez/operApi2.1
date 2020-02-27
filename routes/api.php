@@ -23,7 +23,8 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::prefix('auth')->group(function (){
     Route::post('register', 'AuthController@register');
     Route::post('login', 'AuthController@login');
-    Route::post('recover', 'AuthController@recover');    
+    Route::post('recover', 'AuthController@recover');
+    Route::post('edit', 'AuthController@edit');        
 });
 
 Route::group(['middleware' => ['jwt.auth']], function() {
@@ -38,6 +39,8 @@ Route::group(['middleware' => ['jwt.auth']], function() {
         Route::post('add', 'RoleController@store');
         Route::post('edit', 'RoleController@edit');
         Route::post('delete', 'RoleController@delete');
+        Route::get('getRolesPermissions', 'RoleController@AllRolesPermissions');
+        Route::post('editRolesPermissions', 'RoleController@changeRolePermissions');
     });
 
     Route::prefix('permissions')->group(function (){
